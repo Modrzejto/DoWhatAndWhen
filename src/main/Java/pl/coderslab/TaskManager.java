@@ -1,7 +1,11 @@
 package pl.coderslab;
 
+import com.opencsv.CSVWriter;
+
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,9 +33,10 @@ public class TaskManager {
 
         while (!endLoop) {
             switch (scanner.next()) {
-                case "add" ->
-                    //addTask();
-                        endLoop = true;
+                case "add" -> {
+                    addTask();
+                    endLoop = true;
+                }
                 case "remove" ->
                     //removeTask();
                         endLoop = true;
@@ -67,8 +72,42 @@ public class TaskManager {
 
         for (List<String> line : tasksList) {
             for (String value : line) {
-                System.out.println(value.trim());
+                System.out.println(value.trim().replaceAll("\"", ""));
             }
+        }
+    }
+
+    public static void addTask() {
+        scanner = new Scanner(System.in);
+        String[] newTask = new String[3];
+
+        System.out.println("Task name:");
+        String newValue = scanner.nextLine();
+
+        newTask[0] = newValue.trim().replaceAll(",", "");
+
+        System.out.println("Is your task  important: true/false");
+        newValue = scanner.nextLine();
+        if (newValue.equalsIgnoreCase("true")) {
+            newTask[1] = "Important";
+        } else {
+            newTask[1] = "Not important";
+        }
+
+        System.out.println("Task due date:");
+        newValue = scanner.nextLine();
+
+        newTask[2] = newValue.trim().replaceAll(",", "");
+
+        List<String[]> exportData = new ArrayList<>();
+        exportData.add(newTask);
+
+        try (FileWriter fW = new FileWriter(tasksFile, true)) {
+            try (CSVWriter csvWriter = new CSVWriter(fW)) {
+                csvWriter.writeAll(exportData);
+            }
+        } catch (IOException e) {
+            System.err.println("IO error (probably FNF)");
         }
     }
 }
