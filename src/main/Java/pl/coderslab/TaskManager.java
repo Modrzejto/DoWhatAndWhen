@@ -37,9 +37,10 @@ public class TaskManager {
                     addTask();
                     endLoop = true;
                 }
-                case "remove" ->
-                    //removeTask();
-                        endLoop = true;
+                case "remove" -> {
+                    removeTask();
+                    endLoop = true;
+                }
                 case "list" -> {
                     listTasks();
                     endLoop = true;
@@ -69,12 +70,18 @@ public class TaskManager {
 
     public static void listTasks() {
         getTasks();
+        int rowCounter = 1;
 
         for (List<String> line : tasksList) {
+            System.out.print(rowCounter + ".: ");
             for (String value : line) {
-                System.out.println(value.trim().replaceAll("\"", ""));
+                System.out.print(value.replaceAll( "\"", "") + "\t");
             }
+            System.out.print("\n");
+            rowCounter++;
         }
+
+        displayOptions();
     }
 
     public static void addTask() {
@@ -109,5 +116,14 @@ public class TaskManager {
         } catch (IOException e) {
             System.err.println("IO error (probably FNF)");
         }
+
+        displayOptions();
+    }
+
+    public static void removeTask() {
+        getTasks();
+        scanner = new Scanner(System.in);
+
+        System.out.println("Input the number of a task that you want to remove:");
     }
 }
