@@ -1,11 +1,10 @@
 package pl.coderslab;
 
+import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
+import com.opencsv.exceptions.CsvException;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -42,7 +41,7 @@ public class TaskManager {
                     endLoop = true;
                 }
                 case "list" -> {
-                    listTasks();
+                    listTasks(true);
                     endLoop = true;
                 }
                 case "exit" -> System.exit(22);
@@ -68,7 +67,7 @@ public class TaskManager {
         }
     }
 
-    public static void listTasks() {
+    public static void listTasks(boolean b) {
         getTasks();
         int rowCounter = 1;
 
@@ -81,7 +80,7 @@ public class TaskManager {
             rowCounter++;
         }
 
-        displayOptions();
+        if (b) displayOptions();
     }
 
     public static void addTask() {
@@ -121,9 +120,34 @@ public class TaskManager {
     }
 
     public static void removeTask() {
-        getTasks();
+        listTasks(false);
         scanner = new Scanner(System.in);
+        int tasksNum;
 
-        System.out.println("Input the number of a task that you want to remove:");
+        System.out.println("Input the number of a task that you want to remove: (or type '-1' to return back to menu)");
+        tasksNum = scanner.nextInt() - 1;
+
+        if (tasksNum >= 0) {
+            try (CSVReader csvReader = new CSVReader(new FileReader(tasksFile))) {
+                List<String[]> tasks = csvReader.readAll();
+                tasks.remove(tasksNum);
+
+                try (FileWriter fileWriter = new FileWriter(tasksFile)) {
+                    try (CSVWriter csvWriter = new CSVWriter(fileWriter)) {
+                        csvWriter.writeAll(tasks);
+                    }
+                } catch (IOException e) {
+                    System.err.println("Error overwriting file");
+                }
+            } catch (IOException e) {
+                System.err.println("IO error (reading file)");
+            } catch (CsvException e) {
+                System.err.println("CSV exception (reading file)");
+            }
+        } else {
+            displayOptions();
+        }
+
+        displayOptions();
     }
 }
