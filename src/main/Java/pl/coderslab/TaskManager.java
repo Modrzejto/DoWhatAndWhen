@@ -169,11 +169,8 @@ public class TaskManager {
 
         System.out.println("Input the number of a task that you want to remove: (or type any number <= 0 to return back to menu)");
         while (!scanner.hasNextInt()) {
-            try {
-                scanner.nextInt();
-            } catch (InputMismatchException e) {
-                System.err.println("Please input a number.");
-            }
+            scanner.next();
+            System.out.println("Please input a number.");
         }
         tasksNum = scanner.nextInt();
 
