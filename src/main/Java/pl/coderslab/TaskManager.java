@@ -5,10 +5,7 @@ import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvException;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class TaskManager {
 
@@ -122,10 +119,17 @@ public class TaskManager {
     public static void removeTask() {
         listTasks(false);
         scanner = new Scanner(System.in);
-        int tasksNum;
+        int tasksNum = -2;
 
         System.out.println("Input the number of a task that you want to remove: (or type '-1' to return back to menu)");
-        tasksNum = scanner.nextInt() - 1;
+        while (!scanner.hasNextInt()) {
+            try {
+                tasksNum = scanner.nextInt() - 1;
+            } catch (InputMismatchException e) {
+                System.err.println("Please input a number.");
+                scanner.next();
+            }
+        }
 
         if (tasksNum >= 0) {
             try (CSVReader csvReader = new CSVReader(new FileReader(tasksFile))) {
