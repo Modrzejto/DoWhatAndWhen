@@ -6,6 +6,8 @@ import com.opencsv.exceptions.CsvException;
 
 import java.io.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class TaskManager {
 
@@ -41,7 +43,10 @@ public class TaskManager {
                     listTasks(true);
                     endLoop = true;
                 }
-                case "exit" -> System.exit(22);
+                case "exit" -> {
+                    System.err.println("Bye bye");
+                    System.exit(22);
+                }
                 default -> System.out.println("Please select a valid option");
             }
         }
@@ -83,24 +88,40 @@ public class TaskManager {
     public static void addTask() {
         scanner = new Scanner(System.in);
         String[] newTask = new String[3];
+        String newValue;
 
         System.out.println("Task name:");
-        String newValue = scanner.nextLine();
-
-        newTask[0] = newValue.trim().replaceAll(",", "");
-
-        System.out.println("Is your task  important: true/false");
         newValue = scanner.nextLine();
-        if (newValue.equalsIgnoreCase("true")) {
-            newTask[1] = "Important";
-        } else {
-            newTask[1] = "Not important";
+
+        if (newValue.isEmpty() || newValue.isBlank()) {
+            System.err.println("Task name cannot be empty. Try again");
+            displayOptions();
         }
 
-        System.out.println("Task due date:");
-        newValue = scanner.nextLine();
+        newTask[0] = newValue.trim().replaceAll(",", "").replaceAll("\n", "");
 
-        newTask[2] = newValue.trim().replaceAll(",", "");
+        System.out.println("Is your task  important: true/false");
+        newValue = scanner.next();
+
+        if (newValue.equalsIgnoreCase("true")) {
+            newTask[1] = "Important";
+        } else if (newValue.equalsIgnoreCase("false")) {
+            newTask[1] = "Not important";
+        } else {
+            System.err.println("Wrong input try again.");
+            displayOptions();
+        }
+
+        System.out.println("Task due date: (format: RRRR-MM-DD)");
+        Pattern datePattern = Pattern.compile("[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]");
+        newValue = scanner.next();
+        Matcher dateMatch = datePattern.matcher(newValue);
+        if (dateMatch.find()) {
+            newTask[2] = newValue.trim().replaceAll(",", "");
+        } else {
+            System.err.println("Incorrect date format");
+            displayOptions();
+        }
 
         List<String[]> exportData = new ArrayList<>();
         exportData.add(newTask);
