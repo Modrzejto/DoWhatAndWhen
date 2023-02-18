@@ -18,7 +18,23 @@ public class TaskManager {
     static int tasksNumCounter;
 
     public static void main(String[] args) {
+        createTaskList();
         displayOptions();
+    }
+
+    public static void createTaskList() {
+        List<String[]> headers = new ArrayList<>();
+        headers.add(new String[]{"Task name", "Importance", "Due"});
+
+        try {
+            if (tasksFile.createNewFile()) {
+                try (CSVWriter writer = new CSVWriter(new FileWriter(tasksFile))) {
+                    writer.writeAll(headers);
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("IOException error");
+        }
     }
 
     public static void displayOptions() {
@@ -41,7 +57,7 @@ public class TaskManager {
                     endLoop = true;
                 }
                 case "list" -> {
-                    listTasks();
+                    listTasks(true);
                     endLoop = true;
                 }
                 case "exit" -> {
@@ -74,12 +90,14 @@ public class TaskManager {
         }
     }
 
-    public static void listTasks() {
+    public static void listTasks(boolean displayOptions) {
         getTasks();
-        int rowCounter = 1;
+        int rowCounter = 0;
 
         for (List<String> line : tasksList) {
-            System.out.print(rowCounter + ".: ");
+            if (rowCounter >= 1) {
+                System.out.print(rowCounter + ".: ");
+            }
             for (String value : line) {
                 System.out.print(value.replaceAll("\"", "") + "\t");
             }
@@ -87,7 +105,9 @@ public class TaskManager {
             rowCounter++;
         }
 
-        displayOptions();
+        if (displayOptions) {
+            displayOptions();
+        }
     }
 
     public static void addTask() {
@@ -143,7 +163,7 @@ public class TaskManager {
     }
 
     public static void removeTask() {
-        getTasks();
+        listTasks(false);
         scanner = new Scanner(System.in);
         int tasksNum;
 
@@ -155,34 +175,29 @@ public class TaskManager {
                 System.err.println("Please input a number.");
             }
         }
-        tasksNum = scanner.nextInt() - 1;
+        tasksNum = scanner.nextInt();
 
         if (tasksNum > 0) {
-            if (tasksNum + 1 <= tasksNumCounter) {
-                try (CSVReader csvReader = new CSVReader(new FileReader(tasksFile))) {
-                    List<String[]> tasks = csvReader.readAll();
-                    tasks.remove(tasksNum);
+            if (tasksNum <= tasksNumCounter - 1) {
+                try (CSVReader reader = new CSVReader(new FileReader(tasksFile))) {
+                    List<String[]> newTasks = reader.readAll();
+                    newTasks.remove(tasksNum);
 
-                    try (FileWriter fileWriter = new FileWriter(tasksFile)) {
-                        try (CSVWriter csvWriter = new CSVWriter(fileWriter)) {
-                            System.out.println("Removed successfully");
-                            csvWriter.writeAll(tasks);
-                        }
-                    } catch (IOException e) {
-                        System.err.println("Error overwriting file");
-                    }
-                } catch (IOException e) {
-                    System.err.println("IO error (reading file)");
-                } catch (CsvException e) {
-                    System.err.println("CSV exception (reading file)");
+                    CSVWriter csvWriter = new CSVWriter(new FileWriter(tasksFile));
+                    csvWriter.writeAll(newTasks);
+                    csvWriter.close();
+                    System.out.println("Removed successfully");
+                    displayOptions();
+                } catch (IOException | CsvException e) {
+                    System.err.println("IOError ");
+                    e.printStackTrace();
                 }
             } else {
-                System.err.println("No task found at given number (try a number between 1 and " + tasksNumCounter);
+                System.err.println("No task found at given number");
+                displayOptions();
             }
         } else {
             displayOptions();
         }
-
-        displayOptions();
     }
 }
