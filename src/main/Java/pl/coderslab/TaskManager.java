@@ -5,10 +5,9 @@ import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvException;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class TaskManager {
 
@@ -16,6 +15,7 @@ public class TaskManager {
     static File tasksFile = new File("tasks.csv");
     static List<List<String>> tasksList = new ArrayList<>();
     static Scanner scanner;
+    static int tasksNumCounter;
 
     public static void main(String[] args) {
         displayOptions();
@@ -41,16 +41,22 @@ public class TaskManager {
                     endLoop = true;
                 }
                 case "list" -> {
-                    listTasks(true);
+                    listTasks();
                     endLoop = true;
                 }
-                case "exit" -> System.exit(22);
+                case "exit" -> {
+                    System.err.println("Bye bye");
+                    System.exit(22);
+                }
                 default -> System.out.println("Please select a valid option");
             }
         }
     }
 
     public static void getTasks() {
+        tasksList.clear();
+        tasksNumCounter = 0;
+
         try {
             scanner = new Scanner(tasksFile);
             while (scanner.hasNextLine()) {
@@ -59,6 +65,7 @@ public class TaskManager {
                 //adds parsed line from tasks.csv to values[]
                 tasksList.add(Arrays.asList(values));
                 //then moves values[] to tasksList list
+                tasksNumCounter++;
             }
         } catch (FileNotFoundException e) {
             System.err.println("File not found");
@@ -67,43 +74,59 @@ public class TaskManager {
         }
     }
 
-    public static void listTasks(boolean b) {
+    public static void listTasks() {
         getTasks();
         int rowCounter = 1;
 
         for (List<String> line : tasksList) {
             System.out.print(rowCounter + ".: ");
             for (String value : line) {
-                System.out.print(value.replaceAll( "\"", "") + "\t");
+                System.out.print(value.replaceAll("\"", "") + "\t");
             }
             System.out.print("\n");
             rowCounter++;
         }
 
-        if (b) displayOptions();
+        displayOptions();
     }
 
     public static void addTask() {
         scanner = new Scanner(System.in);
         String[] newTask = new String[3];
+        String newValue;
 
         System.out.println("Task name:");
-        String newValue = scanner.nextLine();
-
-        newTask[0] = newValue.trim().replaceAll(",", "");
-
-        System.out.println("Is your task  important: true/false");
         newValue = scanner.nextLine();
-        if (newValue.equalsIgnoreCase("true")) {
-            newTask[1] = "Important";
-        } else {
-            newTask[1] = "Not important";
+
+        if (newValue.isEmpty() || newValue.isBlank()) {
+            System.err.println("Task name cannot be empty. Try again");
+            displayOptions();
         }
 
-        System.out.println("Task due date:");
-        newValue = scanner.nextLine();
+        newTask[0] = newValue.trim().replaceAll(",", "").replaceAll("\n", "");
 
-        newTask[2] = newValue.trim().replaceAll(",", "");
+        System.out.println("Is your task  important: true/false");
+        newValue = scanner.next();
+
+        if (newValue.equalsIgnoreCase("true")) {
+            newTask[1] = "Important";
+        } else if (newValue.equalsIgnoreCase("false")) {
+            newTask[1] = "Not important";
+        } else {
+            System.err.println("Wrong input try again.");
+            displayOptions();
+        }
+
+        System.out.println("Task due date: (format: RRRR-MM-DD)");
+        Pattern datePattern = Pattern.compile("[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]");
+        newValue = scanner.next();
+        Matcher dateMatch = datePattern.matcher(newValue);
+        if (dateMatch.find()) {
+            newTask[2] = newValue.trim().replaceAll(",", "");
+        } else {
+            System.err.println("Incorrect date format");
+            displayOptions();
+        }
 
         List<String[]> exportData = new ArrayList<>();
         exportData.add(newTask);
@@ -120,29 +143,41 @@ public class TaskManager {
     }
 
     public static void removeTask() {
-        listTasks(false);
+        getTasks();
         scanner = new Scanner(System.in);
         int tasksNum;
 
-        System.out.println("Input the number of a task that you want to remove: (or type '-1' to return back to menu)");
+        System.out.println("Input the number of a task that you want to remove: (or type any number <= 0 to return back to menu)");
+        while (!scanner.hasNextInt()) {
+            try {
+                scanner.nextInt();
+            } catch (InputMismatchException e) {
+                System.err.println("Please input a number.");
+            }
+        }
         tasksNum = scanner.nextInt() - 1;
 
-        if (tasksNum >= 0) {
-            try (CSVReader csvReader = new CSVReader(new FileReader(tasksFile))) {
-                List<String[]> tasks = csvReader.readAll();
-                tasks.remove(tasksNum);
+        if (tasksNum > 0) {
+            if (tasksNum + 1 <= tasksNumCounter) {
+                try (CSVReader csvReader = new CSVReader(new FileReader(tasksFile))) {
+                    List<String[]> tasks = csvReader.readAll();
+                    tasks.remove(tasksNum);
 
-                try (FileWriter fileWriter = new FileWriter(tasksFile)) {
-                    try (CSVWriter csvWriter = new CSVWriter(fileWriter)) {
-                        csvWriter.writeAll(tasks);
+                    try (FileWriter fileWriter = new FileWriter(tasksFile)) {
+                        try (CSVWriter csvWriter = new CSVWriter(fileWriter)) {
+                            System.out.println("Removed successfully");
+                            csvWriter.writeAll(tasks);
+                        }
+                    } catch (IOException e) {
+                        System.err.println("Error overwriting file");
                     }
                 } catch (IOException e) {
-                    System.err.println("Error overwriting file");
+                    System.err.println("IO error (reading file)");
+                } catch (CsvException e) {
+                    System.err.println("CSV exception (reading file)");
                 }
-            } catch (IOException e) {
-                System.err.println("IO error (reading file)");
-            } catch (CsvException e) {
-                System.err.println("CSV exception (reading file)");
+            } else {
+                System.err.println("No task found at given number (try a number between 1 and " + tasksNumCounter);
             }
         } else {
             displayOptions();
